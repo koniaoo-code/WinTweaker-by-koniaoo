@@ -85,4 +85,4 @@
 
 ---
 
-*by koniaoo — 2025*
+*by koniaoo — 2026*
