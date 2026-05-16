@@ -11,7 +11,7 @@
 3. Он сам установит `customtkinter` + `pillow` + `pyinstaller`
 4. Готовый **`WinTweaker.exe`** появится в папке **`dist\`**
 5. Запускай `WinTweaker.exe` **от имени Администратора**
-
+Или же просто скачай Portable версию!
 ---
 
 ## 📋 Требования
