@@ -1,57 +1,23 @@
 @echo off
-chcp 65001 >nul 2>&1
-title WinTweaker Builder by koniaoo
-
+chcp 65001 >nul
+title WinTweaker v1.1 - Build
+color 0A
 echo.
-echo  === WinTweaker by koniaoo ===
+echo  =========================================
+echo    WinTweaker v1.1 - build portable .exe
+echo    by koniaoo
+echo  =========================================
 echo.
-
-echo [1/4] Checking Python...
 python --version >nul 2>&1
-if errorlevel 1 (
-    echo [ERROR] Python not found! Install Python 3.10+ from python.org
-    pause
-    exit /b 1
-)
-echo [OK] Python found
-
-echo.
-echo [2/4] Installing dependencies...
+if errorlevel 1 ( echo [ERROR] Python not found & pause & exit /b )
+echo [1/3] Installing dependencies...
 pip install customtkinter pillow pyinstaller --quiet --upgrade
-if errorlevel 1 (
-    echo [ERROR] Failed to install dependencies
-    pause
-    exit /b 1
-)
-echo [OK] Done
-
+echo [2/3] Building .exe...
+pyinstaller --onefile --windowed --name "WinTweaker" --uac-admin --icon="icon.ico" --add-data "icon.ico;." wintweaker.py
+if errorlevel 1 ( pyinstaller --onefile --windowed --name "WinTweaker" --uac-admin wintweaker.py )
 echo.
-echo [3/4] Generating icon...
-python generate_icon.py
-echo [OK] Icon ready
-
-echo.
-echo [4/4] Building WinTweaker.exe ...
-echo Please wait 1-3 minutes...
-
-if exist "wintweaker.ico" (
-    pyinstaller --onefile --windowed --noconsole --name WinTweaker --icon wintweaker.ico wintweaker.py
-) else (
-    pyinstaller --onefile --windowed --noconsole --name WinTweaker wintweaker.py
-)
-
-if errorlevel 1 (
-    echo.
-    echo [ERROR] Build failed. Check output above.
-    pause
-    exit /b 1
-)
-
-echo.
-echo ================================
-echo  SUCCESS! dist\WinTweaker.exe
-echo ================================
-echo.
-echo Run WinTweaker.exe as Administrator!
-echo.
+if exist "dist\WinTweaker.exe" (
+    echo  DONE! dist\WinTweaker.exe
+    explorer dist
+) else ( echo [ERROR] Build failed )
 pause
