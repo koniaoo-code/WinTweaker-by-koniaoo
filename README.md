@@ -71,3 +71,4 @@ build.bat              :: -> dist\WinTweaker.exe
 ---
 
 <p align="center"><sub>Сделано с ❤ by koniaoo</sub></p>
+котость меллстройность газан 67 лдь рдйй салатик бурмалдатик крч смехуятина ч и друн
