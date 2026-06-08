@@ -1,0 +1,183 @@
+<Window x:Class="WinTweaker.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:h="clr-namespace:WinTweaker.Helpers"
+        Title="WinTweaker - by koniaoo"
+        Icon="icon.ico"
+        Height="700" Width="1100" MinHeight="470" MinWidth="780"
+        WindowStartupLocation="CenterScreen"
+        SizeToContent="Manual"
+        Background="{StaticResource BgDarkBrush}"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="ClearType"
+        FontFamily="Segoe UI" FontSize="13">
+
+    <Window.Resources>
+        <!-- Tweak card (reused for every tweak section) -->
+        <DataTemplate x:Key="TweakCardTemplate">
+            <Border Style="{StaticResource CardBorder}" Margin="0,4" Padding="0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="16,13">
+                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="14"
+                                   Foreground="{StaticResource PrimaryTextBrush}" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding Desc}" FontSize="13" Margin="0,3,0,0"
+                                   Foreground="{StaticResource SecBrush}" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <ToggleButton Grid.Column="1" Style="{StaticResource Switch}"
+                                  Margin="16,0" VerticalAlignment="Center"
+                                  IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                  Click="OnToggleClick"/>
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="228"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ── Sidebar ─────────────────────────────────── -->
+        <Border Grid.Column="0" Background="{StaticResource BgSidebarBrush}">
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Top" Margin="20,22,20,8">
+                    <StackPanel x:Name="LogoBox" Orientation="Horizontal" Cursor="Hand"
+                                Background="Transparent" MouseLeftButtonUp="OnLogoClick"
+                                RenderTransformOrigin="0.5,0.5">
+                        <StackPanel.RenderTransform>
+                            <ScaleTransform/>
+                        </StackPanel.RenderTransform>
+                        <TextBlock Text="Win" FontFamily="Segoe UI Black" FontSize="22" Foreground="White"/>
+                        <TextBlock Text="Tweaker" FontFamily="Segoe UI Black" FontSize="22"
+                                   Foreground="{StaticResource OrangeBrush}"/>
+                    </StackPanel>
+                    <TextBlock x:Name="ByLbl" Text="by koniaoo" FontSize="11"
+                               Foreground="{StaticResource MutedBrush}" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- Pinned at the bottom: always visible regardless of DPI/size -->
+                <StackPanel DockPanel.Dock="Bottom" Margin="10,8,10,12">
+                    <Button x:Name="RebootBtn" Style="{StaticResource FlatButton}"
+                            Background="#FF332100" Foreground="{StaticResource OrangeBrush}"
+                            Height="34" Margin="0,0,0,8" Click="OnRebootClick"
+                            Visibility="Collapsed"/>
+                    <Button x:Name="ApplyAllBtn" Style="{StaticResource PrimaryButton}"
+                            Height="48" Click="OnApplyAll"/>
+                    <Border Margin="2,8,2,0">
+                        <TextBlock x:Name="AdminStatus" FontSize="11" FontWeight="SemiBold"
+                                   HorizontalAlignment="Left"
+                                   Foreground="{StaticResource GreenBrush}"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- Scrollable: nav sections + presets/restore/revert (works at any scale) -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="10,6,10,6">
+                        <StackPanel x:Name="NavPanel"/>
+
+                        <Border Height="1" Background="{StaticResource CardBorderBrush}" Margin="6,8,6,8"/>
+
+                        <Button x:Name="LangBtn" Content="RU / EN" Style="{StaticResource SmallButton}"
+                                Height="24" Margin="0,0,0,8" Click="OnToggleLang"/>
+                        <TextBlock x:Name="PresetsLbl" FontSize="10" Foreground="{StaticResource MutedBrush}"
+                                   Margin="2,0,0,3"/>
+                        <Button x:Name="GamingBtn" Style="{StaticResource SmallButton}" Height="30"
+                                Margin="0,0,0,4" Tag="gaming" Click="OnPreset"
+                                HorizontalContentAlignment="Left" Padding="12,0"/>
+                        <Button x:Name="PrivacyBtn" Style="{StaticResource SmallButton}" Height="30"
+                                Margin="0,0,0,4" Tag="privacy" Click="OnPreset"
+                                HorizontalContentAlignment="Left" Padding="12,0"/>
+                        <Button x:Name="MinimalBtn" Style="{StaticResource SmallButton}" Height="30"
+                                Margin="0,0,0,8" Tag="minimal" Click="OnPreset"
+                                HorizontalContentAlignment="Left" Padding="12,0"/>
+                        <Button x:Name="RestoreBtn" Style="{StaticResource FlatButton}"
+                                Background="#FF14304A" Height="32" Margin="0,0,0,6"
+                                FontSize="11" Click="OnRestorePoint"/>
+                        <Button x:Name="RevertBtn" Style="{StaticResource FlatButton}"
+                                Background="#FF2A2A2A" Height="32" Margin="0,0,0,4"
+                                FontSize="11" Click="OnRevertAll"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- ── Right content ───────────────────────────── -->
+        <Grid Grid.Column="1" Background="{StaticResource BgPanelBrush}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Margin="20,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="SecTitle" Grid.Column="0" VerticalAlignment="Center"
+                           FontSize="18" FontWeight="Bold"
+                           Foreground="{StaticResource PrimaryTextBrush}"/>
+                <Border x:Name="SearchHost" Grid.Column="1" Width="220" Height="30"
+                        Background="{StaticResource SearchBrush}" CornerRadius="9" BorderThickness="1"
+                        BorderBrush="{StaticResource CardBorderBrush}" Margin="0,0,14,0">
+                    <Grid>
+                        <TextBlock x:Name="SearchHint" Foreground="#FF666666" FontSize="12"
+                                   VerticalAlignment="Center" Margin="11,0,0,0" IsHitTestVisible="False"/>
+                        <TextBox x:Name="SearchBox" Background="Transparent" BorderThickness="0"
+                                 Foreground="White" CaretBrush="White" FontSize="12"
+                                 VerticalContentAlignment="Center" Padding="10,0,8,0"
+                                 TextChanged="OnSearch"/>
+                    </Grid>
+                </Border>
+                <TextBlock x:Name="AdminDot" Grid.Column="2" VerticalAlignment="Center" FontSize="11"
+                           FontWeight="SemiBold" Foreground="{StaticResource GreenBrush}"/>
+            </Grid>
+
+            <Button x:Name="ApplySecBtn" Grid.Row="1" Height="42"
+                    Click="OnApplySection">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                        <Setter Property="Margin" Value="0"/>
+                    </Style>
+                </Button.Style>
+            </Button>
+
+            <ScrollViewer x:Name="ContentScroll" Grid.Row="2" Margin="16,6"
+                          VerticalScrollBarVisibility="Auto"
+                          PanningMode="VerticalOnly" PreviewMouseWheel="OnContentWheel">
+                <StackPanel x:Name="ContentHost"/>
+            </ScrollViewer>
+
+            <!-- ── Log panel (closeable) ───────────────── -->
+            <Border x:Name="LogPanel" Grid.Row="3" Background="#FF0C0C11" Height="130">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" Margin="12,5,12,0">
+                        <TextBlock x:Name="LogLbl" Text="Лог" FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{StaticResource SecBrush}" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button x:Name="ClearBtn" Content="Очистить" Style="{StaticResource SmallButton}"
+                                    Click="OnClearLog"/>
+                            <Button Content="✕" Style="{StaticResource SmallButton}" Width="24"
+                                    Margin="6,0,0,0" Click="OnCloseLog"/>
+                        </StackPanel>
+                    </Grid>
+                    <TextBox x:Name="LogBox" Background="Transparent" Foreground="#FFAAAAAA"
+                             FontFamily="Consolas" FontSize="11" BorderThickness="0" IsReadOnly="True"
+                             VerticalScrollBarVisibility="Auto" Margin="12,4,12,6"
+                             TextWrapping="NoWrap"/>
+                </DockPanel>
+            </Border>
+
+            <Button x:Name="LogShowBtn" Grid.Row="3" Height="26" Visibility="Collapsed"
+                    HorizontalContentAlignment="Center" Style="{StaticResource SmallButton}"
+                    Click="OnShowLog"/>
+        </Grid>
+    </Grid>
+</Window>
