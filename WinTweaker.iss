@@ -5,7 +5,7 @@
 ; ============================================================
 
 #define MyAppName "WinTweaker"
-#define MyAppVersion "1.5"
+#define MyAppVersion "2.0"
 #define MyAppPublisher "koniaoo"
 #define MyAppExeName "WinTweaker.exe"
 #define MyPublishDir "bin\Release\net8.0-windows\win-x64\publish"

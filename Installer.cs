@@ -57,12 +57,15 @@ public static class Installer
     private static void CreateShortcut(string lnkPath, string targetExe)
     {
         string dir = Path.GetDirectoryName(targetExe) ?? "";
+        // Escape single quotes so paths with an apostrophe (e.g. a username
+        // like O'Brien) don't break the PowerShell string literals.
+        string Q(string s) => s.Replace("'", "''");
         string ps =
             "$w = New-Object -ComObject WScript.Shell; " +
-            $"$s = $w.CreateShortcut('{lnkPath}'); " +
-            $"$s.TargetPath = '{targetExe}'; " +
-            $"$s.IconLocation = '{targetExe}'; " +
-            $"$s.WorkingDirectory = '{dir}'; " +
+            $"$s = $w.CreateShortcut('{Q(lnkPath)}'); " +
+            $"$s.TargetPath = '{Q(targetExe)}'; " +
+            $"$s.IconLocation = '{Q(targetExe)}'; " +
+            $"$s.WorkingDirectory = '{Q(dir)}'; " +
             "$s.Save()";
         CommandRunner.RunPowerShell(ps, 15_000);
     }

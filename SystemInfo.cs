@@ -22,9 +22,23 @@ $cpu.NumberOfLogicalProcessors; $sep
 $cpu.MaxClockSpeed; $sep
 [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1GB,1); $sep
 [math]::Round($os.FreePhysicalMemory/1MB,1); $sep
+# GPU + VRAM: scan ALL display-adapter class keys and pick the one with the
+# most dedicated memory (the real/discrete GPU). qwMemorySize is 64-bit, so it
+# reports >4GB correctly; WMI's AdapterRAM is 32-bit and caps at 4GB. Name and
+# VRAM are taken from the SAME adapter, so they never mismatch on iGPU+dGPU.
+$gpuName = ''
+$vram = 0
+$base = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}'
+Get-ChildItem $base -ErrorAction SilentlyContinue | ForEach-Object {
+  $p = Get-ItemProperty $_.PSPath -ErrorAction SilentlyContinue
+  $m = $p.'HardwareInformation.qwMemorySize'
+  if($m -and $m -gt $vram){ $vram = $m; if($p.DriverDesc){ $gpuName = $p.DriverDesc } }
+}
 $g = Get-CimInstance Win32_VideoController | Select-Object -First 1
-$g.Name; $sep
-[math]::Round($g.AdapterRAM/1GB,1); $sep
+if(-not $gpuName){ $gpuName = $g.Name }
+if($vram -le 0){ $vram = $g.AdapterRAM }
+$gpuName; $sep
+[math]::Round($vram/1GB,1); $sep
 $d = Get-CimInstance Win32_LogicalDisk -Filter ""DeviceID='C:'""
 ([math]::Round($d.Size/1GB,0).ToString() + ' GB total, ' + [math]::Round($d.FreeSpace/1GB,1).ToString() + ' GB free'); $sep
 (Get-CimInstance Win32_BaseBoard).Manufacturer; $sep

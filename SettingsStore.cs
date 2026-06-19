@@ -9,6 +9,8 @@ public sealed class Settings
     public string Lang { get; set; } = "ru";
     public string Theme { get; set; } = "dark";
     public bool FirstRunDone { get; set; } = false;
+    /// <summary>Last app version whose "What's new" the user has already seen.</summary>
+    public string LastSeenVersion { get; set; } = "";
     public Dictionary<string, bool> Tweaks { get; set; } = new();
 
     /// <summary>

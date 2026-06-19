@@ -24,6 +24,7 @@ public partial class MainWindow : Window
     private static readonly HashSet<string> DangerousTweaks = new()
     {
         "meltdown", "remove_edge", "remove_onedrive", "disable_recall", "disable_copilot", "wu_disable",
+        "uac_off", "smartscreen_off",
     };
     private string _lang;
     private Dictionary<string, List<Tweak>> _data;
@@ -68,6 +69,84 @@ public partial class MainWindow : Window
         ShowSection("dashboard");
         UpdateAdmin();
         _ = CheckUpdatesAsync();
+
+        // Show the "What's new" changelog once, after the window is visible.
+        Loaded += (_, _) => ShowWhatsNewIfNeeded();
+    }
+
+    // One-shot changelog: shown only when the app version differs from the last
+    // version the user has seen. Marking it seen first guarantees show-once.
+    private void ShowWhatsNewIfNeeded()
+    {
+        if (_settings.LastSeenVersion == AppInfo.Version) return;
+        _settings.LastSeenVersion = AppInfo.Version;
+        _settings.Save();
+        try { BuildWhatsNewWindow().ShowDialog(); } catch { /* ignore */ }
+    }
+
+    private Window BuildWhatsNewWindow()
+    {
+        var win = new Window
+        {
+            Title = _s["whatsnew_title"],
+            WindowStyle = WindowStyle.None,
+            AllowsTransparency = true,
+            Background = Brushes.Transparent,
+            ResizeMode = ResizeMode.NoResize,
+            SizeToContent = SizeToContent.Height,
+            Width = 480,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            Owner = this,
+            ShowInTaskbar = false,
+        };
+
+        var root = new Border
+        {
+            Background = (Brush)FindResource("BgPanelBrush"),
+            CornerRadius = new CornerRadius(14),
+            BorderBrush = (Brush)FindResource("CardBorderBrush"),
+            BorderThickness = new Thickness(1),
+            Margin = new Thickness(16),
+            Effect = new System.Windows.Media.Effects.DropShadowEffect
+            { BlurRadius = 28, ShadowDepth = 0, Opacity = 0.5, Color = Colors.Black },
+        };
+        root.MouseLeftButtonDown += (_, me) => { if (me.ButtonState == MouseButtonState.Pressed) win.DragMove(); };
+
+        var sp = new StackPanel { Margin = new Thickness(28, 24, 28, 24) };
+
+        var head = new StackPanel { Orientation = Orientation.Horizontal };
+        head.Children.Add(new TextBlock { Text = "✨", FontSize = 22, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center });
+        head.Children.Add(new TextBlock { Text = _s["whatsnew_title"], FontSize = 22, FontWeight = FontWeights.Bold, Foreground = (Brush)FindResource("PrimaryTextBrush"), VerticalAlignment = VerticalAlignment.Center });
+        sp.Children.Add(head);
+
+        sp.Children.Add(new TextBlock
+        {
+            Text = "WinTweaker v" + AppInfo.Version,
+            FontSize = 12, FontWeight = FontWeights.SemiBold,
+            Foreground = (Brush)FindResource("OrangeBrush"),
+            Margin = new Thickness(0, 2, 0, 18),
+        });
+
+        foreach (var line in _s["whatsnew_body"].Split('\n'))
+        {
+            var t = line.Trim();
+            if (t.Length == 0) continue;
+            var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 11) };
+            row.Children.Add(new TextBlock { Text = "✓", FontSize = 13, FontWeight = FontWeights.Bold, Foreground = (Brush)FindResource("GreenBrush"), Margin = new Thickness(0, 1, 10, 0), VerticalAlignment = VerticalAlignment.Top });
+            row.Children.Add(new TextBlock { Text = t, FontSize = 13, Foreground = (Brush)FindResource("SecBrush"), TextWrapping = TextWrapping.Wrap, Width = 372 });
+            sp.Children.Add(row);
+        }
+
+        var ok = MakeButton(_s["whatsnew_ok"], (Brush)FindResource("OrangeBrush"), 0);
+        ok.Height = 40;
+        ok.HorizontalAlignment = HorizontalAlignment.Stretch;
+        ok.Margin = new Thickness(0, 12, 0, 0);
+        ok.Click += (_, _) => win.Close();
+        sp.Children.Add(ok);
+
+        root.Child = sp;
+        win.Content = root;
+        return win;
     }
 
     private async Task CheckUpdatesAsync()
@@ -81,19 +160,13 @@ public partial class MainWindow : Window
     private void ApplyTexts()
     {
         ByLbl.Text = _s["by"];
-        ApplyAllBtn.Content = _s["apply_all"];
-        ApplySecBtn.Content = _s["apply_sec"];
         RebootBtn.Content = _s["reboot_btn"];
         LogLbl.Text = _s["log_lbl"];
         ClearBtn.Content = _s["log_clear"];
-        LogShowBtn.Content = _s["log_show"];
+        LogToggleBtn.Content = _s["log_lbl"];
+        RestartExpBtn.Content = _s["restart_explorer"];
+        SettingsBtn.Content = _s["settings_about"];
         SearchHint.Text = _s["search_hint"];
-        PresetsLbl.Text = _s["presets"];
-        GamingBtn.Content = _s["preset_gaming"];
-        PrivacyBtn.Content = _s["preset_privacy"];
-        MinimalBtn.Content = _s["preset_minimal"];
-        RestoreBtn.Content = _s["restore_point"];
-        RevertBtn.Content = _s["revert_all"];
     }
 
     // ── Sidebar navigation ───────────────────────────────
@@ -106,8 +179,8 @@ public partial class MainWindow : Window
             string glyph = Strings.Icons.TryGetValue(sec, out var ic) ? ic : "";
             string name = _s.Sections.TryGetValue(sec, out var n) ? n : sec;
 
-            var row = new StackPanel { Orientation = Orientation.Horizontal };
-            row.Children.Add(new TextBlock
+            var row = new DockPanel { LastChildFill = true };
+            var icon = new TextBlock
             {
                 Text = glyph,
                 FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),
@@ -115,8 +188,16 @@ public partial class MainWindow : Window
                 Width = 26,
                 TextAlignment = TextAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
+            };
+            DockPanel.SetDock(icon, Dock.Left);
+            row.Children.Add(icon);
+            row.Children.Add(new TextBlock
+            {
+                Text = name,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(2, 0, 0, 0),
+                TextTrimming = TextTrimming.CharacterEllipsis,   // never clip mid-letter
             });
-            row.Children.Add(new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center });
 
             var btn = new Button
             {
@@ -137,26 +218,39 @@ public partial class MainWindow : Window
             ShowSection(sec);
     }
 
+    private bool _navigating;   // true while ShowSection clears the search box (suppress OnSearch rebuild)
+    private bool _searchActive; // true while global search results are shown (suppress stale async scans)
+
     private void ShowSection(string sec)
     {
         _currentSec = sec;
         SecTitle.Text = SectionTitle(sec);
-        if (SearchBox.Text.Length > 0) SearchBox.Text = "";   // reset search on navigation
+        if (SearchBox.Text.Length > 0)               // reset search on navigation
+        {
+            _navigating = true;
+            SearchBox.Text = "";
+            _navigating = false;
+            if (SearchHint != null) SearchHint.Visibility = Visibility.Visible;
+        }
 
-        var grad = (Brush)FindResource("OrangeGradient");
+        var activeBg = (Brush)FindResource("NavActiveBrush");   // subtle flat highlight (minimalist)
+        var accent = (Brush)FindResource("OrangeBrush");        // accent text on active item
         var sec2 = (Brush)FindResource("SecBrush");
-        var white = (Brush)FindResource("PrimaryTextBrush");
         foreach (var (s, btn) in _navButtons)
         {
             bool on = s == sec;
-            btn.Foreground = on ? white : sec2;        // active = gradient pill + white text
-            btn.Background = on ? grad : Brushes.Transparent;
+            btn.Foreground = on ? accent : sec2;       // active = accent text + subtle bg
+            btn.Background = on ? activeBg : Brushes.Transparent;
         }
 
-        bool special = Strings.SpecialSections.Contains(sec);
-        ApplySecBtn.Visibility = special ? Visibility.Collapsed : Visibility.Visible;
-        SearchHost.Visibility = special ? Visibility.Collapsed : Visibility.Visible;
+        RenderSectionContent(sec);
+    }
 
+    // Builds just the content of a section (no nav/search side effects) so the
+    // search box can restore it cleanly when cleared.
+    private void RenderSectionContent(string sec)
+    {
+        _searchActive = false;
         _currentItemsControl = null;
         _currentTweakList = null;
         _dashTimer?.Stop();                 // stop live dashboard updates when leaving
@@ -235,39 +329,69 @@ public partial class MainWindow : Window
             ItemTemplate = (DataTemplate)Resources["TweakCardTemplate"],
         };
         ContentHost.Children.Add(_currentItemsControl);
-        ApplyFilter();
+        _currentItemsControl.ItemsSource = _currentTweakList;
     }
 
     private void OnSearch(object sender, TextChangedEventArgs e)
     {
+        if (_navigating) return;   // text cleared by navigation, not a user search
+
         string q = SearchBox.Text.Trim();
         if (SearchHint != null)
             SearchHint.Visibility = q.Length == 0 ? Visibility.Visible : Visibility.Collapsed;
 
-        // Reflect search vs section in the title
-        if (q.Length > 0)
-            SecTitle.Text = _s["search_results"];
-        else
-            SecTitle.Text = SectionTitle(_currentSec);
-
-        ApplyFilter();
-    }
-
-    // Search is GLOBAL: when there is a query, it matches tweaks from EVERY
-    // section, not just the current one. Empty query -> current section only.
-    private void ApplyFilter()
-    {
-        if (_currentItemsControl == null) return;
-        string q = SearchBox.Text.Trim();
         if (q.Length == 0)
         {
-            _currentItemsControl.ItemsSource = _currentTweakList;
+            // Restore the section we were on — works for the dashboard and other
+            // special pages too, not just tweak lists.
+            SecTitle.Text = SectionTitle(_currentSec);
+            RenderSectionContent(_currentSec);
             return;
         }
-        _currentItemsControl.ItemsSource = _data.Values.SelectMany(x => x)
+
+        SecTitle.Text = _s["search_results"];
+        RenderSearchResults(q);
+    }
+
+    // GLOBAL search across every section. Builds a fresh results list, so it
+    // works from ANY page (dashboard, benchmark, etc.), not only tweak sections.
+    private void RenderSearchResults(string q)
+    {
+        _searchActive = true;
+        _dashTimer?.Stop();
+        _scrollAnim?.Stop();
+        ContentHost.Children.Clear();
+        ContentScroll.ScrollToTop();
+
+        var matches = _data.Values.SelectMany(x => x)
             .Where(t => t.Name.Contains(q, StringComparison.OrdinalIgnoreCase)
                      || t.Desc.Contains(q, StringComparison.OrdinalIgnoreCase))
             .ToList();
+
+        if (matches.Count == 0)
+        {
+            _currentItemsControl = null;
+            _currentTweakList = null;
+            ContentHost.Children.Add(new TextBlock
+            {
+                Text = _s["search_none"],
+                Foreground = (Brush)FindResource("SecBrush"),
+                FontSize = 13,
+                Margin = new Thickness(4, 24, 0, 0),
+            });
+        }
+        else
+        {
+            var ic = new ItemsControl
+            {
+                ItemTemplate = (DataTemplate)Resources["TweakCardTemplate"],
+                ItemsSource = matches,
+            };
+            _currentItemsControl = ic;
+            _currentTweakList = matches;
+            ContentHost.Children.Add(ic);
+        }
+        FadeInContent();
     }
 
     private string SectionTitle(string sec)
@@ -321,8 +445,12 @@ public partial class MainWindow : Window
 
     private async Task ApplyBulk(IEnumerable<Tweak> tweaks, string doneMsg)
     {
+        int skipped = 0;
         foreach (var t in tweaks.ToList())
         {
+            // Risky/irreversible tweaks are never applied in bulk — they must be
+            // enabled individually so the confirmation prompt is shown first.
+            if (DangerousTweaks.Contains(t.Id)) { skipped++; continue; }
             t.IsEnabled = true;                 // flips the visible switch ON (animated)
             _settings.SetTweak(t.Id, true);
             Log($"► {t.Name}...", null);
@@ -330,6 +458,7 @@ public partial class MainWindow : Window
             Log($"  {ShortOut(outp)}", ok);
         }
         _settings.Save();
+        if (skipped > 0) Log(_s["bulk_skipped"] + skipped, null);
         Log(doneMsg, true);
         ShowRebootButton();          // tweaks applied -> reveal reboot button
         PromptReboot();
@@ -386,11 +515,12 @@ public partial class MainWindow : Window
     // ── Create a System Restore point ────────────────────
     private async void OnRestorePoint(object sender, RoutedEventArgs e)
     {
-        RestoreBtn.IsEnabled = false;
+        var btn = sender as Button;
+        if (btn != null) btn.IsEnabled = false;
         Log(_s["restore_creating"], null);
         bool ok = await SystemRestore.CreateAsync();
         Log(ok ? _s["restore_done"] : _s["restore_fail"], ok);
-        RestoreBtn.IsEnabled = true;
+        if (btn != null) btn.IsEnabled = true;
     }
 
     // ── PC Info (pre-warmed + cached for instant open) ───
@@ -413,7 +543,7 @@ public partial class MainWindow : Window
         _pcInfoTask ??= SystemInfo.CollectAsync();
         var info = await _pcInfoTask;
         _pcInfoCache = info;
-        if (_currentSec != "pcinfo") return;     // navigated away while loading
+        if (_currentSec != "pcinfo" || _searchActive) return;     // navigated away or searching
         RenderPcInfo(info);
     }
 
@@ -522,6 +652,47 @@ public partial class MainWindow : Window
             TextAlignment = TextAlignment.Center, Margin = new Thickness(0, 0, 0, 16),
         });
 
+        // ── Quick actions / settings (relocated from the sidebar for a clean look) ──
+        ContentHost.Children.Add(new TextBlock
+        {
+            Text = _s["dash_quick"], FontWeight = FontWeights.Bold, FontSize = 12,
+            Foreground = (Brush)FindResource("OrangeBrush"), Margin = new Thickness(2, 4, 0, 8),
+        });
+
+        var applyAll = MakeButton(_s["apply_all"], (Brush)FindResource("OrangeBrush"), 0);
+        applyAll.Height = 44; applyAll.HorizontalAlignment = HorizontalAlignment.Stretch;
+        applyAll.Margin = new Thickness(0, 0, 0, 8);
+        applyAll.Click += OnApplyAll;
+        ContentHost.Children.Add(applyAll);
+
+        var qaRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 12) };
+        var rpBtn = MakeSecondaryButton(_s["restore_point"], 230);
+        rpBtn.Height = 36; rpBtn.FontSize = 12; rpBtn.Click += OnRestorePoint;
+        var revBtn = MakeSecondaryButton(_s["revert_all"], 200);
+        revBtn.Height = 36; revBtn.FontSize = 12; revBtn.Click += OnRevertAll;
+        qaRow.Children.Add(rpBtn); qaRow.Children.Add(revBtn);
+        ContentHost.Children.Add(qaRow);
+
+        ContentHost.Children.Add(new TextBlock
+        {
+            Text = _s["presets"], FontWeight = FontWeights.Bold, FontSize = 12,
+            Foreground = (Brush)FindResource("OrangeBrush"), Margin = new Thickness(2, 2, 0, 8),
+        });
+        var presetRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 8) };
+        foreach (var (tag, key) in new[] { ("gaming", "preset_gaming"), ("privacy", "preset_privacy"), ("minimal", "preset_minimal") })
+        {
+            var pb = MakeSecondaryButton(_s[key], 150);
+            pb.Height = 34; pb.FontSize = 12; pb.Tag = tag; pb.Click += OnPreset;
+            presetRow.Children.Add(pb);
+        }
+        ContentHost.Children.Add(presetRow);
+
+        var langBtn = MakeSecondaryButton("RU / EN", 150);
+        langBtn.Height = 32; langBtn.FontSize = 12; langBtn.HorizontalAlignment = HorizontalAlignment.Center;
+        langBtn.Margin = new Thickness(0, 0, 0, 18);
+        langBtn.Click += OnToggleLang;
+        ContentHost.Children.Add(langBtn);
+
         AddAboutTile("👤", _s["about_dev"], AppInfo.Developer);
         AddAboutTile("📦", _s["about_ver"], "v" + AppInfo.Version);
         AddAboutTile("💬", _s["about_dc"], AppInfo.Discord);
@@ -541,7 +712,7 @@ public partial class MainWindow : Window
         gh.Click += (_, _) => OpenUrl(AppInfo.GitHub);
         bf.Children.Add(gh);
 
-        var site = MakeButton(_s["open_site"], new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A)), 160);
+        var site = MakeSecondaryButton(_s["open_site"], 160);
         site.Click += (_, _) => OpenUrl(AppInfo.Website);
         bf.Children.Add(site);
 
@@ -553,13 +724,13 @@ public partial class MainWindow : Window
 
         // ── Profile export / import ──
         var pf = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 6) };
-        var exp = MakeButton(_s["export_profile"], new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A)), 0);
+        var exp = MakeSecondaryButton(_s["export_profile"], 0);
         exp.Height = 32; exp.FontSize = 11; exp.Padding = new Thickness(14, 0, 14, 0); exp.Margin = new Thickness(0);
         exp.Click += OnExportProfile;
-        var imp = MakeButton(_s["import_profile"], new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A)), 0);
+        var imp = MakeSecondaryButton(_s["import_profile"], 0);
         imp.Height = 32; imp.FontSize = 11; imp.Padding = new Thickness(14, 0, 14, 0); imp.Margin = new Thickness(8, 0, 0, 0);
         imp.Click += OnImportProfile;
-        var thm = MakeButton(_s["theme_toggle"], new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A)), 0);
+        var thm = MakeSecondaryButton(_s["theme_toggle"], 0);
         thm.Height = 32; thm.FontSize = 11; thm.Padding = new Thickness(14, 0, 14, 0); thm.Margin = new Thickness(8, 0, 0, 0);
         thm.Click += (_, _) => App.ToggleTheme();
         pf.Children.Add(exp);
@@ -570,7 +741,7 @@ public partial class MainWindow : Window
         // ── Update checker ──
         var upRow = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 4, 0, 16) };
         _updateStatus = new TextBlock { FontSize = 12, Foreground = (Brush)FindResource("MutedBrush"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) };
-        var checkBtn = MakeButton(_s["check_updates"], new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A)), 0);
+        var checkBtn = MakeSecondaryButton(_s["check_updates"], 0);
         checkBtn.Height = 30; checkBtn.FontSize = 11; checkBtn.Padding = new Thickness(14, 0, 14, 0); checkBtn.Margin = new Thickness(0);
         checkBtn.Click += async (_, _) => await DoUpdateCheck();
         _updateDownloadBtn = MakeButton(_s["update_download"], (Brush)FindResource("OrangeBrush"), 0);
@@ -706,7 +877,7 @@ public partial class MainWindow : Window
 
         _uwpScanBtn.Content = _s["uwp_scan"];
         _uwpScanBtn.IsEnabled = true;
-        if (_currentSec != "uwp") return;
+        if (_currentSec != "uwp" || _searchActive) return;
 
         if (apps.Count == 0)
         {
@@ -782,7 +953,7 @@ public partial class MainWindow : Window
         _startupList.Children.Clear();
         var items = await StartupApps.ScanAsync();
         _startupScanBtn.Content = _s["startup_scan"]; _startupScanBtn.IsEnabled = true;
-        if (_currentSec != "startup") return;
+        if (_currentSec != "startup" || _searchActive) return;
         if (items.Count == 0) { _startupList.Children.Add(NoteLabel(_s["startup_none"])); return; }
         _startupList.Children.Add(FoundLabel(_s["found"] + items.Count));
         foreach (var it in items)
@@ -815,7 +986,7 @@ public partial class MainWindow : Window
         _svcList.Children.Clear();
         var items = await WinServices.ScanAsync();
         _svcScanBtn.Content = _s["svc_scan"]; _svcScanBtn.IsEnabled = true;
-        if (_currentSec != "services") return;
+        if (_currentSec != "services" || _searchActive) return;
         _svcList.Children.Add(FoundLabel(_s["found"] + items.Count));
         foreach (var it in items)
         {
@@ -847,7 +1018,7 @@ public partial class MainWindow : Window
         _appsList.Children.Clear();
         var items = await InstalledApps.ScanAsync();
         _appsScanBtn.Content = _s["apps_scan"]; _appsScanBtn.IsEnabled = true;
-        if (_currentSec != "apps") return;
+        if (_currentSec != "apps" || _searchActive) return;
         if (items.Count == 0) { _appsList.Children.Add(NoteLabel(_s["apps_none"])); return; }
         _appsList.Children.Add(FoundLabel(_s["found"] + items.Count));
         foreach (var app in items)
@@ -945,7 +1116,7 @@ public partial class MainWindow : Window
         };
         ContentHost.Children.Add(qa1);
 
-        var qa2 = MakeButton(_s["qa_restore"], new SolidColorBrush(Color.FromRgb(0x14, 0x30, 0x4A)), 0);
+        var qa2 = MakeSecondaryButton(_s["qa_restore"], 0);
         qa2.HorizontalAlignment = HorizontalAlignment.Stretch; qa2.Margin = new Thickness(0, 0, 0, 6);
         qa2.Click += async (_, _) =>
         {
@@ -955,8 +1126,8 @@ public partial class MainWindow : Window
         };
         ContentHost.Children.Add(qa2);
 
-        var qa3 = MakeButton(_s["qa_clean"], new SolidColorBrush(Color.FromRgb(0x2A, 0x2A, 0x2A)), 0);
-        qa3.HorizontalAlignment = HorizontalAlignment.Stretch;
+        var qa3 = MakeSecondaryButton(_s["qa_clean"], 0);
+        qa3.HorizontalAlignment = HorizontalAlignment.Stretch; qa3.Margin = new Thickness(0, 0, 0, 6);
         qa3.Click += async (_, _) =>
         {
             Log(_s["qa_clean"], null);
@@ -964,6 +1135,26 @@ public partial class MainWindow : Window
             Log("Temp", ok);
         };
         ContentHost.Children.Add(qa3);
+
+        var qa4 = MakeSecondaryButton(_s["qa_dns"], 0);
+        qa4.HorizontalAlignment = HorizontalAlignment.Stretch; qa4.Margin = new Thickness(0, 0, 0, 6);
+        qa4.Click += async (_, _) =>
+        {
+            Log(_s["qa_dns"], null);
+            var (ok, _) = await Task.Run(() => CommandRunner.Run("ipconfig /flushdns"));
+            Log("DNS", ok);
+        };
+        ContentHost.Children.Add(qa4);
+
+        var qa5 = MakeSecondaryButton(_s["qa_recycle"], 0);
+        qa5.HorizontalAlignment = HorizontalAlignment.Stretch;
+        qa5.Click += async (_, _) =>
+        {
+            Log(_s["qa_recycle"], null);
+            var (ok, _) = await Task.Run(() => CommandRunner.Run(@"PowerShell -Command ""Clear-RecycleBin -Force -EA SilentlyContinue"""));
+            Log("Recycle Bin", ok);
+        };
+        ContentHost.Children.Add(qa5);
 
         UpdateDashLive();
         _dashTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
@@ -1099,6 +1290,16 @@ public partial class MainWindow : Window
         return b;
     }
 
+    // Secondary (non-accent) button. Uses themed brushes so it reads correctly
+    // in both dark and light mode (the dark RGB literals it replaced stayed
+    // black-on-white in light theme).
+    private Button MakeSecondaryButton(string text, double width)
+    {
+        var b = MakeButton(text, (Brush)FindResource("BtnSecondaryBrush"), width);
+        b.Foreground = (Brush)FindResource("BtnSecondaryTextBrush");
+        return b;
+    }
+
     // ── Admin state ──────────────────────────────────────
     private void UpdateAdmin()
     {
@@ -1108,8 +1309,6 @@ public partial class MainWindow : Window
 
         AdminDot.Text = txt;
         AdminDot.Foreground = col;
-        AdminStatus.Text = txt;          // always-on indicator (bottom-left)
-        AdminStatus.Foreground = col;
 
         if (!admin) Log(_s["no_admin"], false);
     }
@@ -1160,16 +1359,21 @@ public partial class MainWindow : Window
     private void OnClearLog(object sender, RoutedEventArgs e) => LogBox.Clear();
 
     private void OnCloseLog(object sender, RoutedEventArgs e)
+        => LogPanel.Visibility = Visibility.Collapsed;
+
+    private void OnToggleLog(object sender, RoutedEventArgs e)
+        => LogPanel.Visibility = LogPanel.Visibility == Visibility.Visible
+            ? Visibility.Collapsed : Visibility.Visible;
+
+    // Bottom bar: restart Explorer so Explorer/taskbar tweaks take effect immediately.
+    private async void OnRestartExplorer(object sender, RoutedEventArgs e)
     {
-        LogPanel.Visibility = Visibility.Collapsed;
-        LogShowBtn.Visibility = Visibility.Visible;
+        Log(_s["restart_explorer"], null);
+        await Task.Run(() => CommandRunner.Run("taskkill /f /im explorer.exe & start explorer.exe"));
+        Log(_s["restart_explorer_done"], true);
     }
 
-    private void OnShowLog(object sender, RoutedEventArgs e)
-    {
-        LogShowBtn.Visibility = Visibility.Collapsed;
-        LogPanel.Visibility = Visibility.Visible;
-    }
+    private void OnOpenAbout(object sender, RoutedEventArgs e) => ShowSection("about");
 
     // ── Language switch ──────────────────────────────────
     private void OnToggleLang(object sender, RoutedEventArgs e)

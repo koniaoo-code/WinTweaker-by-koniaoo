@@ -3,7 +3,7 @@ namespace WinTweaker.Data;
 /// <summary>App-wide constants: version and developer contacts.</summary>
 public static class AppInfo
 {
-    public const string Version = "1.5";
+    public const string Version = "2.0";
     public const string Developer = "koniaoo";
     public const string GitHub = "https://github.com/koniaoo-code/WinTweaker-by-koniaoo";
     public const string GitHubProfile = "https://github.com/koniaoo-code";
@@ -31,15 +31,30 @@ public sealed class Strings
     // Segoe Fluent Icons / Segoe MDL2 Assets glyphs (native, monochrome, modern)
     public static readonly Dictionary<string, string> Icons = new()
     {
-        ["performance"] = "", ["telemetry"] = "", ["ads"] = "",
-        ["cleanup"] = "", ["network"] = "", ["privacy"] = "",
-        ["uwp"] = "", ["pcinfo"] = "", ["about"] = "",
-        ["dashboard"] = "\uE80F", ["benchmark"] = "\uE916", ["startup"] = "\uE7E8", ["services"] = "\uE71D", ["apps"] = "\uE738",
+        ["dashboard"] = "",
+        ["explorer"] = "",
+        ["performance"] = "",
+        ["gaming"] = "",
+        ["power"] = "",
+        ["telemetry"] = "",
+        ["privacy"] = "",
+        ["security"] = "",
+        ["ads"] = "",
+        ["network"] = "",
+        ["cleanup"] = "",
+        ["startup"] = "",
+        ["services"] = "",
+        ["apps"] = "",
+        ["uwp"] = "",
+        ["benchmark"] = "",
+        ["pcinfo"] = "",
+        ["about"] = "",
     };
 
     /// <summary>Full sidebar order (tweak sections + special pages).</summary>
     public static readonly string[] NavOrder =
-        { "dashboard", "performance", "telemetry", "ads", "cleanup", "network", "privacy", "startup", "services", "apps", "uwp", "pcinfo", "benchmark", "about" };
+        { "dashboard", "explorer", "performance", "gaming", "power", "telemetry", "privacy",
+          "security", "ads", "network", "cleanup", "startup", "services", "apps", "uwp", "benchmark", "pcinfo", "about" };
 
     public static readonly HashSet<string> SpecialSections = new() { "dashboard", "benchmark", "startup", "services", "apps", "uwp", "pcinfo", "about" };
 
@@ -57,17 +72,22 @@ public sealed class Strings
         ["log_lbl"] = "Лог",
         ["log_clear"] = "Очистить",
         ["log_show"] = "📋  Показать лог",
+        ["restart_explorer"] = "🔄  Перезапустить проводник",
+        ["restart_explorer_done"] = "Проводник перезапущен ✓",
+        ["settings_about"] = "⚙  Настройки / О программе",
         ["enable"] = "Вкл",
         ["disable"] = "Выкл",
         ["applied_sec"] = "Применены все твики раздела ✓",
         ["applied_all"] = "Применены все твики ✓",
+        ["bulk_skipped"] = "⚠ Рискованные твики пропущены — включите вручную: ",
         ["reboot_title"] = "Перезагрузка рекомендуется",
         ["reboot_msg"] = "Часть твиков вступит в силу только после перезагрузки.\nПерезагрузить компьютер сейчас?",
         ["reboot_btn"] = "🔄  Требуется перезагрузка",
         ["egg_logo"] = "🥚 Пасхалка! Сделано с ❤ koniaoo. Спасибо, что пользуешься WinTweaker!",
         ["egg_about"] = "🐱 Мяу! Ты нашёл секретный спин ⚡",
-        ["search_hint"] = "🔍  Поиск по всем твикам...",
-        ["search_results"] = "🔍  Результаты поиска",
+        ["search_hint"] = "Поиск по всем твикам...",
+        ["search_results"] = "Результаты поиска",
+        ["search_none"] = "По запросу ничего не найдено.",
         ["presets"] = "Пресеты",
         ["preset_gaming"] = "🎮  Для игр",
         ["preset_privacy"] = "🔒  Приватность",
@@ -113,8 +133,17 @@ public sealed class Strings
         ["qa_minimal"] = "⚡  Применить «Минимальный»",
         ["qa_restore"] = "🛡  Точка восстановления",
         ["qa_clean"] = "🧹  Очистить временные файлы",
+        ["qa_dns"] = "🌐  Сбросить DNS-кэш",
+        ["qa_recycle"] = "🗑  Очистить корзину",
         ["welcome_title"] = "Добро пожаловать в WinTweaker!",
         ["welcome_msg"] = "Совет: перед применением твиков создай точку восстановления — кнопка «Точка восстановления» в боковой панели.\n\nПриятного пользования!",
+        ["whatsnew_title"] = "Что нового",
+        ["whatsnew_ok"] = "Понятно",
+        ["whatsnew_body"] =
+            "Полностью переработана светлая тема — теперь все элементы читаемы\n" +
+            "Стабильное выполнение команд — больше никаких зависаний на тяжёлых операциях (Edge, DISM)\n" +
+            "Точное определение видеопамяти (VRAM) для дискретных видеокарт\n" +
+            "Мелкие улучшения интерфейса и производительности",
         ["theme_toggle"] = "🌓  Сменить тему",
         ["pc_bench"] = "Бенчмарк (сейчас)",
         ["bench_desc"] = "Тест производительности процессора: одноядерный и многопоточный.",
@@ -154,7 +183,8 @@ public sealed class Strings
         ["performance"] = "Производительность", ["telemetry"] = "Телеметрия", ["ads"] = "Реклама",
         ["cleanup"] = "Очистка", ["network"] = "Сеть", ["privacy"] = "Приватность",
         ["dashboard"] = "Дашборд", ["benchmark"] = "Бенчмарк", ["startup"] = "Автозагрузка", ["services"] = "Службы", ["apps"] = "Удаление программ",
-        ["uwp"] = "Удалить UWP приложения", ["pcinfo"] = "Инфо о ПК", ["about"] = "О программе",
+        ["uwp"] = "UWP-приложения", ["pcinfo"] = "Информация о ПК", ["about"] = "Настройки",
+        ["gaming"] = "Игры", ["explorer"] = "Проводник", ["power"] = "Питание", ["security"] = "Безопасность",
     });
 
     private static readonly Strings En = new(new()
@@ -169,17 +199,22 @@ public sealed class Strings
         ["log_lbl"] = "Log",
         ["log_clear"] = "Clear",
         ["log_show"] = "📋  Show log",
+        ["restart_explorer"] = "🔄  Restart Explorer",
+        ["restart_explorer_done"] = "Explorer restarted ✓",
+        ["settings_about"] = "⚙  Settings / About",
         ["enable"] = "On",
         ["disable"] = "Off",
         ["applied_sec"] = "All section tweaks applied ✓",
         ["applied_all"] = "All tweaks applied ✓",
+        ["bulk_skipped"] = "⚠ Risky tweaks skipped — enable them individually: ",
         ["reboot_title"] = "Restart recommended",
         ["reboot_msg"] = "Some tweaks take effect only after a restart.\nRestart your computer now?",
         ["reboot_btn"] = "🔄  Restart required",
         ["egg_logo"] = "🥚 Easter egg! Made with ❤ by koniaoo. Thanks for using WinTweaker!",
         ["egg_about"] = "🐱 Meow! You found the secret spin ⚡",
-        ["search_hint"] = "🔍  Search all tweaks...",
-        ["search_results"] = "🔍  Search results",
+        ["search_hint"] = "Search all tweaks...",
+        ["search_results"] = "Search results",
+        ["search_none"] = "No tweaks match your search.",
         ["presets"] = "Presets",
         ["preset_gaming"] = "🎮  Gaming",
         ["preset_privacy"] = "🔒  Privacy",
@@ -225,8 +260,17 @@ public sealed class Strings
         ["qa_minimal"] = "⚡  Apply Minimal preset",
         ["qa_restore"] = "🛡  Create restore point",
         ["qa_clean"] = "🧹  Clear temp files",
+        ["qa_dns"] = "🌐  Flush DNS cache",
+        ["qa_recycle"] = "🗑  Empty Recycle Bin",
         ["welcome_title"] = "Welcome to WinTweaker!",
         ["welcome_msg"] = "Tip: create a restore point before applying tweaks - the button is in the sidebar.\n\nEnjoy!",
+        ["whatsnew_title"] = "What's new",
+        ["whatsnew_ok"] = "Got it",
+        ["whatsnew_body"] =
+            "Light theme fully reworked — every element is now readable\n" +
+            "Rock-solid command execution — no more hangs on heavy operations (Edge, DISM)\n" +
+            "Accurate video memory (VRAM) detection for discrete GPUs\n" +
+            "Minor UI and performance polish",
         ["theme_toggle"] = "🌓  Toggle theme",
         ["pc_bench"] = "Benchmark (now)",
         ["bench_desc"] = "CPU performance test: single-core and multi-threaded.",
@@ -266,6 +310,7 @@ public sealed class Strings
         ["performance"] = "Performance", ["telemetry"] = "Telemetry", ["ads"] = "Ads & Bloat",
         ["cleanup"] = "Cleanup", ["network"] = "Network", ["privacy"] = "Privacy",
         ["dashboard"] = "Dashboard", ["benchmark"] = "Benchmark", ["startup"] = "Startup", ["services"] = "Services", ["apps"] = "Uninstall apps",
-        ["uwp"] = "Remove UWP Apps", ["pcinfo"] = "PC Info", ["about"] = "About",
+        ["uwp"] = "UWP Apps", ["pcinfo"] = "PC Info", ["about"] = "Settings",
+        ["gaming"] = "Gaming", ["explorer"] = "Explorer", ["power"] = "Power", ["security"] = "Security",
     });
 }

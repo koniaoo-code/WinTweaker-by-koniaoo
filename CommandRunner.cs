@@ -7,7 +7,7 @@ public static class CommandRunner
 {
     /// <summary>
     /// Runs a cmd.exe command with UTF-8 output forced (no кракозябры),
-    /// hidden window, 30s timeout. Returns (ok, trimmed output).
+    /// hidden window, 120s timeout. Returns (ok, trimmed output).
     /// </summary>
     public static (bool Ok, string Output) Run(string command)
     {
@@ -26,13 +26,19 @@ public static class CommandRunner
             using var p = Process.Start(psi);
             if (p is null) return (false, "Failed to start process");
 
-            string stdout = p.StandardOutput.ReadToEnd();
-            string stderr = p.StandardError.ReadToEnd();
-            if (!p.WaitForExit(30_000))
+            // Drain both pipes asynchronously BEFORE waiting: reading one stream
+            // synchronously to the end can deadlock if the child fills the other
+            // pipe's buffer (e.g. Edge's uninstaller spams output). Async reads
+            // also let the 120s timeout actually fire on a hung process.
+            var outTask = p.StandardOutput.ReadToEndAsync();
+            var errTask = p.StandardError.ReadToEndAsync();
+            if (!p.WaitForExit(120_000))
             {
                 try { p.Kill(true); } catch { /* ignore */ }
                 return (false, "Timeout");
             }
+            string stdout = outTask.GetAwaiter().GetResult();
+            string stderr = errTask.GetAwaiter().GetResult();
 
             string raw = (stdout + stderr).Trim();
             var lines = raw
@@ -75,12 +81,18 @@ public static class CommandRunner
 
             using var p = Process.Start(psi);
             if (p is null) return "";
-            string outp = p.StandardOutput.ReadToEnd();
+            // Drain both pipes asynchronously. stderr is redirected, so it must be
+            // read too — otherwise a chatty error stream fills its buffer, blocks
+            // the child, and ReadToEnd(stdout) hangs forever (timeout never fires).
+            var outTask = p.StandardOutput.ReadToEndAsync();
+            var errTask = p.StandardError.ReadToEndAsync();
             if (!p.WaitForExit(timeoutMs))
             {
                 try { p.Kill(true); } catch { /* ignore */ }
                 return "";
             }
+            string outp = outTask.GetAwaiter().GetResult();
+            _ = errTask.GetAwaiter().GetResult();   // drained & discarded
             return outp;
         }
         catch { return ""; }

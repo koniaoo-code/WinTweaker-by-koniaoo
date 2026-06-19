@@ -77,10 +77,13 @@ public partial class App : Application
         B("MutedBrush",       0x8A, 0x8A, 0x99);
         B("SwitchOffBrush",   0xCE, 0xD0, 0xDA);
         B("NavHoverBrush",    0xEC, 0xED, 0xF3);
+        B("NavActiveBrush",   0xE4, 0xE7, 0xF2);
         B("ScrollThumbBrush", 0xC2, 0xC2, 0xCE);
         B("ChipBrush",        0xE8, 0xE9, 0xEF);
         B("ChipHoverBrush",   0xDC, 0xDD, 0xE6);
         B("SearchBrush",      0xFF, 0xFF, 0xFF);
+        B("BtnSecondaryBrush",     0xE8, 0xE9, 0xEF);
+        B("BtnSecondaryTextBrush", 0x1A, 0x1A, 0x24);
         return d;
     }
 
@@ -95,6 +98,9 @@ public partial class App : Application
             if (settings.FirstRunDone) return;
 
             settings.FirstRunDone = true;
+            // Fresh install: the welcome dialog already greets the user, so mark
+            // this version as seen and don't also pop the "What's new" changelog.
+            settings.LastSeenVersion = WinTweaker.Data.AppInfo.Version;
             settings.Save();
 
             if (Environment.Version.Major < 8)
