@@ -1,4 +1,4 @@
-<h1 align="center">WinTweaker ⚡</h1>
+<h1 align="center">WinTweaker ⚡</h1> (ВАЙБКОД ПРОЕКТ!) CLAUDE CODE, OPUS 4.8
 
 <p align="center"><b>Бесплатный оптимизатор Windows 10 / 11 — v2.0 🎉</b><br>
 Ускорь систему, отключи слежку и рекламу — в пару кликов.</p>
